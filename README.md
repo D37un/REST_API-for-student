@@ -45,8 +45,8 @@ cp .env.example .env
 แก้ไฟล์ `.env`:
 
 ```env
-POSTGRES_URL=postgres://postgres:1234@localhost:5432/student-db
-API_SECRET=ข้อความลับของคุณ
+POSTGRES_URL=
+API_SECRET=
 ```
 
 **3. เตรียมฐานข้อมูล** (ถ้ายังไม่มี Postgres สามารถรันด้วย Docker)
