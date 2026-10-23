@@ -4,8 +4,8 @@ REST API สำหรับจัดการข้อมูลนักศึ�
 พัฒนาด้วย **Hono + TypeScript**, **Drizzle ORM**, **PostgreSQL** และ deploy บน **Vercel**
 
 - **ผู้จัดทำ:** Atikan Chinwanno (รหัสนักศึกษา 67070193)
-- **GitHub:** `<ใส่ลิงก์รีโปของคุณ>`
-- **Deployed URL:** `https://<ชื่อโปรเจกต์>.vercel.app/api/v1` *(ใส่หลัง deploy)*
+- **GitHub:** `https://github.com/D37un`
+- **Deployed URL:** `https://restapi-for-student.vercel.app/api/v1`
 
 ---
 
