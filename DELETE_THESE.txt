@@ -1,0 +1,4 @@
+ลบไฟล์เหล่านี้ใน branch cloudflare:
+api/index.ts
+api/local.ts
+vercel.json

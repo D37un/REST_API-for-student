@@ -2,10 +2,10 @@ import { Hono } from "hono";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { zValidator } from "@hono/zod-validator";
-import drizzle from "../db/drizzle.js";
 import { students, GENDERS } from "../db/schema.js";
+import type { AppEnv } from "../types.js";
 
-const studentsRouter = new Hono();
+const studentsRouter = new Hono<AppEnv>();
 
 // ---------- กติกาตรวจข้อมูล (validation) ----------
 const idParam = z.object({
@@ -37,14 +37,16 @@ const duplicateResponse = { error: "Student code already exists" };
 
 // ---------- READ (ทั้งหมด) ----------
 studentsRouter.get("/", async (c) => {
-  const all = await drizzle.select().from(students).orderBy(students.id);
+  const db = c.get("db");
+  const all = await db.select().from(students).orderBy(students.id);
   return c.json(all);
 });
 
 // ---------- READ (รายคน) ----------
 studentsRouter.get("/:id", zValidator("param", idParam), async (c) => {
+  const db = c.get("db");
   const { id } = c.req.valid("param");
-  const [student] = await drizzle.select().from(students).where(eq(students.id, id));
+  const [student] = await db.select().from(students).where(eq(students.id, id));
   if (!student) {
     return c.json({ error: "Student not found" }, 404);
   }
@@ -53,9 +55,10 @@ studentsRouter.get("/:id", zValidator("param", idParam), async (c) => {
 
 // ---------- CREATE ----------
 studentsRouter.post("/", zValidator("json", studentBody), async (c) => {
+  const db = c.get("db");
   const body = c.req.valid("json");
   try {
-    const [created] = await drizzle.insert(students).values(body).returning();
+    const [created] = await db.insert(students).values(body).returning();
     return c.json({ success: true, student: created }, 201);
   } catch (err) {
     if (isUniqueViolation(err)) return c.json(duplicateResponse, 409);
@@ -69,10 +72,11 @@ studentsRouter.put(
   zValidator("param", idParam),
   zValidator("json", studentBody),
   async (c) => {
+    const db = c.get("db");
     const { id } = c.req.valid("param");
     const body = c.req.valid("json");
     try {
-      const updated = await drizzle
+      const updated = await db
         .update(students)
         .set({ ...body, updatedAt: new Date() })
         .where(eq(students.id, id))
@@ -94,10 +98,11 @@ studentsRouter.patch(
   zValidator("param", idParam),
   zValidator("json", studentPatchBody),
   async (c) => {
+    const db = c.get("db");
     const { id } = c.req.valid("param");
     const body = c.req.valid("json");
     try {
-      const updated = await drizzle
+      const updated = await db
         .update(students)
         .set({ ...body, updatedAt: new Date() })
         .where(eq(students.id, id))
@@ -115,8 +120,9 @@ studentsRouter.patch(
 
 // ---------- DELETE ----------
 studentsRouter.delete("/:id", zValidator("param", idParam), async (c) => {
+  const db = c.get("db");
   const { id } = c.req.valid("param");
-  const deleted = await drizzle.delete(students).where(eq(students.id, id)).returning();
+  const deleted = await db.delete(students).where(eq(students.id, id)).returning();
   if (deleted.length === 0) {
     return c.json({ error: "Student not found" }, 404);
   }

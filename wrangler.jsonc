@@ -1,0 +1,14 @@
+{
+  "name": "student-api",
+  "main": "api/worker.ts",
+  "compatibility_date": "2025-09-01",
+  // pg (node-postgres) ต้องใช้ Node.js compatibility
+  "compatibility_flags": ["nodejs_compat"],
+  "hyperdrive": [
+    {
+      "binding": "HYPERDRIVE",
+      // แทนที่ด้วย id ที่ได้จากคำสั่ง: npx wrangler hyperdrive create ...
+      "id": "d6eed3ab9b0342ae9381bd21bd10f1a6"
+    }
+  ]
+}

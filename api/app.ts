@@ -1,15 +1,17 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
+import { env } from "hono/adapter";
 import { HTTPException } from "hono/http-exception";
 import apiRouter from "./routes/api.js";
+import type { AppEnv } from "./types.js";
 
-// สร้างแอปไว้ที่เดียว แล้วให้ทั้งตอนรันในเครื่อง (local.ts) และบน Vercel (index.ts) เรียกใช้ร่วมกัน
-const app = new Hono().basePath("/api");
+const app = new Hono<AppEnv>().basePath("/api");
 
 app.use(
   "*",
   cors({
-    origin: process.env.CORS_ORIGIN ?? "*",
+    // บน Workers ค่าตัวแปรอยู่ใน c.env ไม่ใช่ process.env
+    origin: (_origin, c) => env<{ CORS_ORIGIN?: string }>(c).CORS_ORIGIN ?? "*",
     allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   })
 );

@@ -1,11 +1,14 @@
 # Student API
 
 REST API สำหรับจัดการข้อมูลนักศึกษา (Create, Read, Update, Delete)
-พัฒนาด้วย **Hono + TypeScript**, **Drizzle ORM**, **PostgreSQL** และ deploy บน **Vercel**
+พัฒนาด้วย **Hono + TypeScript**, **Drizzle ORM**, **PostgreSQL** และ deploy บน **Cloudflare Workers** (ต่อฐานข้อมูลผ่าน **Hyperdrive**)
+
+> branch นี้คือเวอร์ชัน Cloudflare Workers ส่วนเวอร์ชัน Vercel อยู่ที่ branch `main`
 
 - **ผู้จัดทำ:** Atikan Chinwanno (รหัสนักศึกษา 67070193)
-- **GitHub:** `https://github.com/D37un`
-- **Deployed URL:** `https://restapi-for-student.vercel.app/api/v1`
+- **GitHub:** `https://github.com/D37un/REST_API-for-student`
+- **Deployed URL:** `https://student-api.<subdomain>.workers.dev/api/v1` *(ใส่หลัง deploy)*
+- **รายงานการ deploy:** ดู [DEPLOYMENT.md](./DEPLOYMENT.md) และ [DEPLOYMENT-CLOUDFLARE.md](./DEPLOYMENT-CLOUDFLARE.md)
 
 ---
 
@@ -26,7 +29,8 @@ REST API สำหรับจัดการข้อมูลนักศึ�
 ## สิ่งที่ต้องมี
 
 - Node.js 20 ขึ้นไป
-- PostgreSQL (ในเครื่อง, Docker หรือฐานข้อมูลออนไลน์ เช่น Neon / Vercel Postgres)
+- PostgreSQL ออนไลน์ (เช่น Neon) — ไม่ต้องติดตั้ง Docker
+- บัญชี Cloudflare (ฟรี) สำหรับ deploy
 
 ## วิธีรันในเครื่อง
 
@@ -36,44 +40,35 @@ REST API สำหรับจัดการข้อมูลนักศึ�
 npm install
 ```
 
-**2. ตั้งค่าตัวแปรสภาพแวดล้อม**
+**2. ตั้งค่าตัวแปร**
 
 ```bash
 cp .env.example .env
+cp .dev.vars.example .dev.vars
 ```
 
-แก้ไฟล์ `.env`:
+- `.env` : ใส่ connection string ของฐานข้อมูลที่ `POSTGRES_URL` และ `CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE`
+- `.dev.vars` : ใส่ `API_SECRET=ข้อความลับของคุณ`
 
-```env
-POSTGRES_URL=postgres://postgres:1234@localhost:5432/student-db
-API_SECRET=ข้อความลับของคุณ
-```
-
-**3. เตรียมฐานข้อมูล** (ถ้ายังไม่มี Postgres สามารถรันด้วย Docker)
-
-```bash
-docker run --name student-db -e POSTGRES_PASSWORD=1234 -e POSTGRES_DB=student-db -p 5432:5432 -d postgres:16
-```
-
-**4. สร้างตารางด้วย migration**
+**3. สร้างตารางด้วย migration**
 
 ```bash
 npm run db:migrate
 ```
 
-**5. เริ่มเซิร์ฟเวอร์**
+**4. เริ่มเซิร์ฟเวอร์**
 
 ```bash
 npm run dev
 ```
 
-เปิดที่ `http://localhost:3000/api/v1` ถ้าสำเร็จจะได้ `{"message":"Student API"}`
+เปิดที่ `http://localhost:8787/api/v1` ถ้าสำเร็จจะได้ `{"message":"Student API"}`
 
 ---
 
 ## วิธีใช้งาน API
 
-Base URL (ในเครื่อง): `http://localhost:3000/api/v1`
+Base URL (ในเครื่อง): `http://localhost:8787/api/v1`
 
 ทุกเส้นทางภายใต้ `/students` ต้องแนบ Header
 
@@ -97,7 +92,7 @@ Authorization: Bearer <API_SECRET>
 
 ```bash
 # เพิ่มนักศึกษา
-curl -X POST http://localhost:3000/api/v1/students \
+curl -X POST http://localhost:8787/api/v1/students \
   -H "Authorization: Bearer YOUR_SECRET" \
   -H "Content-Type: application/json" \
   -d '{
@@ -109,19 +104,47 @@ curl -X POST http://localhost:3000/api/v1/students \
   }'
 
 # ดูทั้งหมด
-curl -H "Authorization: Bearer YOUR_SECRET" http://localhost:3000/api/v1/students
+curl -H "Authorization: Bearer YOUR_SECRET" http://localhost:8787/api/v1/students
 
 # ดูรายคน
-curl -H "Authorization: Bearer YOUR_SECRET" http://localhost:3000/api/v1/students/1
+curl -H "Authorization: Bearer YOUR_SECRET" http://localhost:8787/api/v1/students/1
 
 # แก้ไขบางฟิลด์
-curl -X PATCH http://localhost:3000/api/v1/students/1 \
+curl -X PATCH http://localhost:8787/api/v1/students/1 \
   -H "Authorization: Bearer YOUR_SECRET" \
   -H "Content-Type: application/json" \
   -d '{"lastName": "ใจงาม"}'
 
 # ลบ
-curl -X DELETE -H "Authorization: Bearer YOUR_SECRET" http://localhost:3000/api/v1/students/1
+curl -X DELETE -H "Authorization: Bearer YOUR_SECRET" http://localhost:8787/api/v1/students/1
+```
+
+> ตัวอย่าง curl ด้านบนเป็นสไตล์ bash (macOS/Linux/Git Bash) ถ้าใช้ **Windows PowerShell** ให้ใช้ชุดคำสั่งด้านล่างแทน เพราะ `curl` ใน PowerShell เป็นชื่อย่อของ `Invoke-WebRequest` และไม่รองรับ `\` ต่อบรรทัด
+
+#### ตัวอย่างสำหรับ Windows PowerShell
+
+```powershell
+$B = "http://localhost:8787/api/v1"          # หรือ https://student-api.<subdomain>.workers.dev/api/v1
+$Headers = @{ Authorization = "Bearer YOUR_SECRET" }
+
+# เพิ่มนักศึกษา (ส่งเป็น UTF-8 เพื่อรองรับภาษาไทย)
+$json = '{"firstName":"สมชาย","lastName":"ใจดี","studentCode":"67070001","birthDate":"2005-03-14","gender":"male"}'
+Invoke-RestMethod -Method Post -Uri "$B/students" -Headers $Headers `
+  -ContentType "application/json; charset=utf-8" `
+  -Body ([System.Text.Encoding]::UTF8.GetBytes($json))
+
+# ดูทั้งหมด / รายคน
+Invoke-RestMethod -Uri "$B/students" -Headers $Headers
+Invoke-RestMethod -Uri "$B/students/1" -Headers $Headers
+
+# แก้ไขบางฟิลด์
+$patch = '{"lastName":"ใจงาม"}'
+Invoke-RestMethod -Method Patch -Uri "$B/students/1" -Headers $Headers `
+  -ContentType "application/json; charset=utf-8" `
+  -Body ([System.Text.Encoding]::UTF8.GetBytes($patch))
+
+# ลบ
+Invoke-RestMethod -Method Delete -Uri "$B/students/1" -Headers $Headers
 ```
 
 ใช้ **Postman** ได้เช่นกัน: ตั้ง Authorization เป็น *Bearer Token* และส่ง Body แบบ raw → JSON
@@ -158,20 +181,17 @@ curl -X DELETE -H "Authorization: Bearer YOUR_SECRET" http://localhost:3000/api/
 
 ---
 
-## วิธี Deploy บน Vercel
+## วิธี Deploy บน Cloudflare Workers
 
-1. push โค้ดขึ้น GitHub (ไฟล์ `.env` จะไม่ถูก push เพราะอยู่ใน `.gitignore`)
-2. ที่ Vercel เลือก **Add New → Project** แล้ว import รีโปนี้
-3. สร้างฐานข้อมูล Postgres (แท็บ **Storage**) และเชื่อมกับโปรเจกต์
-4. ตั้ง Environment Variables ให้ครบ:
-   - `POSTGRES_URL` — connection string ของฐานข้อมูล
-   - `API_SECRET` — รหัสลับสำหรับเรียก API
-5. กด **Deploy**
-6. สร้างตารางบนฐานข้อมูลจริง (ทำครั้งเดียว):
+สรุปสั้นๆ (ขั้นตอนละเอียดและปัญหาที่เจออยู่ใน [DEPLOYMENT-CLOUDFLARE.md](./DEPLOYMENT-CLOUDFLARE.md)):
 
-   ```bash
-   POSTGRES_URL="<connection string ของฐานข้อมูลออนไลน์>" npm run db:migrate
-   ```
+```bash
+npx wrangler login
+npx wrangler hyperdrive create student-db --connection-string="<connection string ของฐานข้อมูล>"
+# นำ id ที่ได้ไปใส่ใน wrangler.jsonc ที่ hyperdrive[0].id
+npx wrangler secret put API_SECRET
+npm run deploy
+```
 
 ---
 
@@ -179,24 +199,25 @@ curl -X DELETE -H "Authorization: Bearer YOUR_SECRET" http://localhost:3000/api/
 
 ```
 api/
-├── index.ts          # จุดเข้าสำหรับ Vercel (Serverless Function)
-├── local.ts          # จุดเข้าสำหรับรันในเครื่อง (port 3000)
+├── worker.ts         # จุดเข้าของ Cloudflare Workers
 ├── app.ts            # สร้างแอป Hono, CORS, จัดการ error
+├── types.ts          # ชนิดของ bindings (HYPERDRIVE, API_SECRET) และตัวแปรใน context
 ├── db/
 │   ├── schema.ts     # นิยามตาราง students
-│   └── drizzle.ts    # การเชื่อมต่อฐานข้อมูล
+│   └── drizzle.ts    # สร้างการเชื่อมต่อฐานข้อมูลต่อ 1 request
 └── routes/
-    ├── api.ts        # ตรวจ Bearer token และรวมเส้นทาง
+    ├── api.ts        # ตรวจ Bearer token, เปิด/ปิดการเชื่อมต่อ DB, รวมเส้นทาง
     └── students.ts   # CRUD นักศึกษา + ตรวจข้อมูลด้วย Zod
 drizzle/              # ไฟล์ SQL migration
-vercel.json           # ส่งทุก /api/* เข้า Serverless Function
+wrangler.jsonc        # ตั้งค่า Worker และ Hyperdrive binding
 ```
 
 ## Scripts
 
 | คำสั่ง | ทำอะไร |
 |---|---|
-| `npm run dev` | รันเซิร์ฟเวอร์ในเครื่อง (รีสตาร์ทอัตโนมัติเมื่อแก้โค้ด) |
+| `npm run dev` | รัน Worker ในเครื่องด้วย `wrangler dev` (port 8787) |
+| `npm run deploy` | deploy ขึ้น Cloudflare Workers |
 | `npm run typecheck` | ตรวจชนิดข้อมูล TypeScript |
 | `npm run db:generate` | สร้างไฟล์ migration ใหม่จากการแก้ `schema.ts` |
 | `npm run db:migrate` | รัน migration กับฐานข้อมูล |

@@ -1,0 +1,2 @@
+# ตัวแปรลับสำหรับ wrangler dev (บน Cloudflare จริงตั้งด้วย: npx wrangler secret put API_SECRET)
+API_SECRET=change-me-to-a-long-random-string

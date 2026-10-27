@@ -1,7 +1,7 @@
 node_modules/
 .env
-.env.production
-.vercel
+.dev.vars
+.wrangler/
 dist/
 *.log
 .DS_Store
